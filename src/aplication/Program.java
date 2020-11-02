@@ -11,7 +11,10 @@ public class Program {
 
         System.out.println("=== TEST 2: Seller for Department findById ===");
         var sellers = sellerDao.findByDepartment(1);
+        for (Seller seller : sellers) System.out.println(seller);
 
+        System.out.println("=== TEST 3: Seller findAll ===");
+        sellers = sellerDao.findAll();
         for (Seller seller : sellers) System.out.println(seller);
     }
 }
