@@ -22,6 +22,9 @@ public class SellerDaoJDBC implements SellerDao {
             "ON seller.DepartmentId = department.Id\n" +
             "WHERE DepartmentId = ?\n" +
             "ORDER BY Name";
+    private static final String INSERT = "INSERT INTO seller\n" +
+            "(Name, Email, BirthDate, BaseSalary, DepartmentId)\n" +
+            "VALUES (?,?,?,?,?)";
 
     private static final String SQL_FINDBYID_ALL = "SELECT seller.*,department.Name as DepName\n" +
             "FROM seller INNER JOIN department\n" +
@@ -35,7 +38,32 @@ public class SellerDaoJDBC implements SellerDao {
 
     @Override
     public void insert(Seller seller) {
+        PreparedStatement st = null;
+        try {
+            st = conn.prepareStatement(INSERT, Statement.RETURN_GENERATED_KEYS);
+            st.setString(1, seller.getName());
+            st.setString(2, seller.getEmail());
+            st.setDate(3, new java.sql.Date(seller.getBirthDate().getTime()));
 
+            st.setDouble(4, seller.getBaseSalary());
+            st.setInt(5, seller.getDepartament().getId());
+            var result = st.executeUpdate();
+            if (result > 0) {
+               var rs = st.getGeneratedKeys();
+                if (rs.next()) {
+                    seller.setId(rs.getInt(1));
+                }
+                DB.closeResultSet(rs);
+            }else{
+                throw new DbException("Nenhuma linha foi alterada");
+            }
+
+        }
+        catch (SQLException e){
+            throw new DbException(e.getMessage());
+        }finally {
+            DB.closeStatement(st);
+        }
     }
 
     @Override
