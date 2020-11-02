@@ -25,8 +25,12 @@ public class SellerDaoJDBC implements SellerDao {
     private static final String INSERT = "INSERT INTO seller\n" +
             "(Name, Email, BirthDate, BaseSalary, DepartmentId)\n" +
             "VALUES (?,?,?,?,?)";
+    private static final String UPDATE = "UPDATE seller\n"+
+            "SET Name = ?, Email = ?, BirthDate = ?, BaseSalary = ?, DepartmentId = ?\n"+
+            "WHERE Id = ?";
+    private static final String DELETE = "DELETE FROM seller where id = ?";
 
-    private static final String SQL_FINDBYID_ALL = "SELECT seller.*,department.Name as DepName\n" +
+    private static final String SQL_FINDALL = "SELECT seller.*,department.Name as DepName\n" +
             "FROM seller INNER JOIN department\n" +
             "ON seller.DepartmentId = department.Id\n" +
             "ORDER BY Name";
@@ -44,7 +48,6 @@ public class SellerDaoJDBC implements SellerDao {
             st.setString(1, seller.getName());
             st.setString(2, seller.getEmail());
             st.setDate(3, new java.sql.Date(seller.getBirthDate().getTime()));
-
             st.setDouble(4, seller.getBaseSalary());
             st.setInt(5, seller.getDepartament().getId());
             var result = st.executeUpdate();
@@ -68,12 +71,42 @@ public class SellerDaoJDBC implements SellerDao {
 
     @Override
     public void update(Seller seller) {
+        PreparedStatement st = null;
+        try {
+            st = conn.prepareStatement(UPDATE);
+            st.setString(1, seller.getName());
+            st.setString(2, seller.getEmail());
+            st.setDate(3, new java.sql.Date(seller.getBirthDate().getTime()));
+            st.setDouble(4, seller.getBaseSalary());
+            st.setInt(5, seller.getDepartament().getId());
+            st.setInt(6,seller.getId());
+            var result = st.executeUpdate();
+            if (result == 0) {
+                throw new DbException("Nenhuma linha foi alterada");
+            }
 
+        }
+        catch (SQLException e){
+            throw new DbException(e.getMessage());
+        }finally {
+            DB.closeStatement(st);
+        }
     }
 
     @Override
     public void delete(Integer id) {
-
+        PreparedStatement st = null;
+        try {
+            st = conn.prepareStatement(DELETE);
+            st.setInt(1, id);
+            st.executeUpdate();
+        }
+        catch (SQLException e){
+            throw new DbException(e.getMessage());
+        }
+        finally {
+            DB.closeStatement(st);
+        }
     }
 
     @Override
@@ -141,7 +174,7 @@ public class SellerDaoJDBC implements SellerDao {
         Map<Integer, Department> map = new HashMap<>();
         try {
             st = conn.createStatement();
-            rs = st.executeQuery(SQL_FINDBYID_ALL);
+            rs = st.executeQuery(SQL_FINDALL);
 
             while (rs.next()){
                 var department = map.get(rs.getInt("DepartmentId"));
